@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expense &amp; Budget Visualizer</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+
+    <!-- ===== HEADER ===== -->
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="header-left">
+          <h1 class="logo">💰 Expence &amp; Budget Visualizer</h1>
+          <p class="tagline">Catat, pantau, dan visualisasikan pengeluaranmu!</p>
+        </div>
+        <!-- Dark / Light toggle -->
+        <button class="theme-toggle" id="themeToggle" aria-label="Ganti tema">
+          <span class="theme-icon" id="themeIcon">🌙</span>
+          <span class="theme-label" id="themeLabel">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== MAIN ===== -->
+    <main class="container">
+
+      <!-- ── Saldo Total ── -->
+      <section class="balance-card" aria-label="Saldo Total">
+        <p class="balance-label">Total Saldo</p>
+        <p class="balance-amount" id="totalBalance">Rp 0</p>
+        <div class="balance-stats">
+          <div class="stat income">
+            <span class="stat-icon">↑</span>
+            <div>
+              <p class="stat-label">Pemasukan</p>
+              <p class="stat-value" id="totalIncome">Rp 0</p>
+            </div>
+          </div>
+          <div class="stat expense">
+            <span class="stat-icon">↓</span>
+            <div>
+              <p class="stat-label">Pengeluaran</p>
+              <p class="stat-value" id="totalExpense">Rp 0</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Spending Limit Alert ── -->
+      <div class="limit-alert" id="limitAlert" role="alert" aria-live="polite" style="display:none;">
+        <span class="limit-alert-icon">⚠️</span>
+        <span id="limitAlertMsg"></span>
+      </div>
+
+      <!-- ── Grid: Form + Chart ── -->
+      <div class="grid-two">
+
+        <!-- Formulir Tambah Transaksi -->
+        <section class="card" aria-label="Formulir Transaksi">
+          <h2 class="card-title">Tambah Transaksi</h2>
+          <form id="transactionForm" novalidate>
+
+            <div class="form-group">
+              <label for="itemName">Nama Item</label>
+              <input type="text" id="itemName" placeholder="cth. Makan siang, Bensin…" autocomplete="off" />
+              <span class="error-msg" id="errName"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="amount">Jumlah (Rp)</label>
+              <input type="number" id="amount" placeholder="cth. 50000" min="1" />
+              <span class="error-msg" id="errAmount"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="type">Tipe</label>
+              <select id="type">
+                <option value="pengeluaran">Pengeluaran</option>
+                <option value="pemasukan">Pemasukan</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="categoryGroup">
+              <label for="category">Kategori</label>
+              <select id="category">
+                <option value="">-- Pilih Kategori --</option>
+                <option value="Makanan">🍔 Makanan</option>
+                <option value="Transportasi">🚗 Transportasi</option>
+                <option value="Hiburan">🎮 Hiburan</option>
+              </select>
+              <span class="error-msg" id="errCategory"></span>
+            </div>
+
+            <button type="submit" class="btn-submit">+ Tambah Transaksi</button>
+          </form>
+        </section>
+
+        <!-- Grafik Pie -->
+        <section class="card chart-card" aria-label="Grafik Pengeluaran">
+          <h2 class="card-title">Distribusi Pengeluaran</h2>
+          <div class="chart-wrapper">
+            <canvas id="expenseChart" aria-label="Pie chart distribusi pengeluaran"></canvas>
+          </div>
+          <p class="chart-empty" id="chartEmpty">Belum ada data pengeluaran.</p>
+        </section>
+
+      </div>
+
+      <!-- ── Settings: Kategori Kustom + Batas Pengeluaran ── -->
+      <div class="grid-two">
+
+        <!-- Panel Kategori Kustom -->
+        <section class="card" aria-label="Kategori Kustom">
+          <h2 class="card-title">🏷️ Kategori Kustom</h2>
+
+          <form id="categoryForm" novalidate>
+            <div class="category-form-row">
+              <div class="form-group" style="flex:1;margin-bottom:0">
+                <label for="newCatName">Nama Kategori</label>
+                <input type="text" id="newCatName" placeholder="cth. Kesehatan" autocomplete="off" maxlength="20" />
+                <span class="error-msg" id="errCatName"></span>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label for="newCatEmoji">Emoji</label>
+                <input type="text" id="newCatEmoji" placeholder="🏥" maxlength="2" style="width:4rem;text-align:center" />
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label for="newCatColor">Warna</label>
+                <input type="color" id="newCatColor" value="#06b6d4" style="width:3rem;height:2.5rem;padding:.1rem;cursor:pointer;border-radius:.4rem" />
+              </div>
+            </div>
+            <button type="submit" class="btn-submit" style="margin-top:.75rem">+ Tambah Kategori</button>
+          </form>
+
+          <div class="custom-cat-list" id="customCatList"></div>
+        </section>
+
+        <!-- Panel Batas Pengeluaran -->
+        <section class="card" aria-label="Batas Pengeluaran">
+          <h2 class="card-title">🚨 Batas Pengeluaran</h2>
+          <p class="setting-desc">
+            Atur batas total pengeluaran. Transaksi yang melampaui batas akan ditandai merah.
+          </p>
+
+          <div class="form-group" style="margin-top:1rem">
+            <label for="spendLimit">Batas Total (Rp)</label>
+            <input type="number" id="spendLimit" placeholder="cth. 500000" min="0" />
+          </div>
+          <button class="btn-submit" id="saveLimit">💾 Simpan Batas</button>
+
+          <!-- Batas per kategori -->
+          <div id="catLimitsWrapper" style="margin-top:1.25rem;display:none">
+            <p class="setting-desc" style="margin-bottom:.6rem;font-weight:600">Batas per Kategori (opsional)</p>
+            <div id="catLimitsList"></div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ── Daftar Transaksi ── -->
+      <section class="card" aria-label="Daftar Transaksi">
+        <div class="list-header">
+          <h2 class="card-title">Riwayat Transaksi</h2>
+          <button class="btn-clear" id="clearAll" title="Hapus semua transaksi">
+            🗑 Hapus Semua
+          </button>
+        </div>
+        <div class="transaction-list" id="transactionList">
+          <p class="list-empty" id="listEmpty">Belum ada transaksi. Tambahkan di atas!</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="site-footer">
+      <p>Data tersimpan di browser lokal Anda &nbsp;·&nbsp; © 2026 Budget Visualizer</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>
